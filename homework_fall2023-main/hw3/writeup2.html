@@ -1,0 +1,143 @@
+<h2 id="training-loop">Training Loop</h2>
+<details>
+<ol type="1">
+<li>Compute Action</li>
+</ol>
+<ul>
+<li>Random sampling(at first)<br />
+<code>action = env.action_space.sample()</code></li>
+<li>Then: <code>action = agent.get_action(observation)</code></li>
+</ul>
+<ol start="2" type="1">
+<li><p>Step environment<br />
+<code>...=env.step()</code></p></li>
+<li><p>Add data to replay buffer<br />
+<code>replay_buffer.insert(...)</code></p></li>
+<li><p>Handle episode termination</p></li>
+<li><p>Sample from replay buffer<br />
+<code>batch = replay_buffer.sample(config["batch_size"])</code></p></li>
+<li><p>Train agent<br />
+<code>agent.update(...)</code></p>
+<p>Update Critic<br />
+<code>self.update_critic(observations, actions, rewards, next_observations, dones)</code>
+Update Actor<br />
+<code>self.update_actor(observations)</code><br />
+Hard Update</p>
+<pre><code>if step % self.target_update_period == 0:
+    soft_update_target_critic(1.0)</code></pre>
+<p>Soft Update
+<code>self.soft_update_target_critic(self.soft_target_update_rate)</code></p>
+<p>Update Function:
+<code>target_param.data.copy_(target_param.data * (1.0 - tau) + param.data * tau)</code></p></li>
+</ol>
+</details>
+<p><br/> <br/></p>
+<p>Using a separate target network $$Q_φ′$$, perform soft updates
+$$ φ′ ← φ′ + τ (φ − φ′) $$</p>
+<h2 id="entropy">Entropy</h2>
+<p>Objective function for policy with entropy bonus.</p>
+<p>$$ H(π(a|s)) = E_{a∼π} [− log π(a|s)] $$</p>
+<p>In code:
+<code>-action_distribution.log_prob(action_distribution.rsample()).mean()</code></p>
+<h2 id="update-critic">Update Critic</h2>
+<details>
+<ol type="1">
+<li>Get Actor Distribution
+<code>next_action_distribution = self.actor(next_obs)</code></li>
+<li>Sample from actor
+<code>next_action = next_action_distribution.sample()</code></li>
+<li>Get q_values
+<code>next_qs = self.q_backup_strategy(next_qs)</code></li>
+</ol>
+</details>
+<p><br/> <br/></p>
+<ul>
+<li>Double-Q $$ y_A = r + γQ_{φ′_B} (s′, a′) $$
+$$ y_B = r + γQ_{φ′_A} (s′, a′) $$ In code:
+<code>next_qs = torch.roll(next_qs, shifts=-1, dims=0)</code></li>
+<li>Clipped double-Q:
+$$ y_A = y_B = r + γ \min(Q_{φ′_A} (s′, a′), Q_{φ′_B} (s′, a′)) $$ In
+code: <code>next_qs = torch.min(next_qs, dim=0)[0]</code></li>
+</ul>
+<p>$$y ← r_t + γ(1 − d_t) [Q_φ(s_{t+1}, a_{t+1}) + βH(π(a_{t+1}|s_{t+1}))]$$</p>
+<details>
+<ol start="4" type="1">
+<li><p>Compute Entropy(if used)<br />
+<code>next_action_entropy = self.entropy(next_action_distribution)</code></p>
+<p>Then adding temperature<br />
+<code>next_qs -= (self.temperature * next_action_entropy)</code></p></li>
+<li><p>Compute the target Q-value<br />
+<code>target_values = reward + self.discount * (1- done) * next_qs</code></p></li>
+<li><p>Predict Q-values and Compute Loss</p></li>
+</ol>
+<pre><code>q_values = self.critic(obs, action)
+loss = self.critic_loss(q_values, target_values)</code></pre>
+</details>
+<p><br/> <br/></p>
+<h2 id="update-actor">Update Actor</h2>
+<h3 id="reinforce">REINFORCE</h3>
+<p>Actor with REINFORCE</p>
+<p>$$ E_{s∼D,a∼π(a|s)} [∇_θ log(π_θ (a|s))Q_φ(s, a)] $$</p>
+<details>
+<ol type="1">
+<li><p>Generate Action distribution<br />
+<code>action_distribution: torch.distributions.Distribution = self.actor(obs)</code></p></li>
+<li><p>Sample batch<br />
+<code>action = action_distribution.sample([self.num_actor_samples])</code></p></li>
+<li><p>Compute q_values
+<code>q_values = self.critic(obs, action)</code></p></li>
+<li><p>Compute loss<br />
+<code>loss = -torch.mean(q_values * action_distribution.log_prob(action))</code></p></li>
+<li><p>Compute entropy<br />
+<code>torch.mean(self.entropy(action_distribution))</code></p></li>
+</ol>
+</details>
+<p><br/> <br/></p>
+<h3 id="reparametrize">REPARAMETRIZE</h3>
+<p>Actor with REPARAMETRIZE</p>
+<p>$$ ∇_θ E_{s∼D, a∼π_θ(a|s)} [Q(s, a)] = ∇_θ E_{s∼D, ε∼N} [Q(s, μ_θ(s) + σ_θ(s)ε)] = E_{s∼D, ε∼N} [∇_θ Q(s, μ_θ(s) + σ_θ(s)ε)] $$</p>
+<p>(Use rsample instead)</p>
+<h3 id="objective-function-for-policy-with-entropy-bonus.">Objective
+function for policy with entropy bonus.</h3>
+<p>$$ L_π = Q(s, μ_θ (s) + σ_θ (s)ε) + βH(π(a|s)) $$</p>
+<p>In code: <code>loss -= self.temperature * entropy</code></p>
+<h2 id="experiments-to-run">Experiments to Run</h2>
+<details>
+<pre><code># SAC
+# HalfCheetah
+python cs285/scripts/run_hw3_sac.py -cfg experiments/sac/halfcheetah_reinforce1.yaml
+python cs285/scripts/run_hw3_sac.py -cfg experiments/sac/halfcheetah_reinforce10.yaml
+python cs285/scripts/run_hw3_sac.py -cfg experiments/sac/halfcheetah_reparametrize.yaml
+
+
+# Hopper
+python cs285/scripts/run_hw3_sac.py -cfg experiments/sac/hopper.yaml
+python cs285/scripts/run_hw3_sac.py -cfg experiments/sac/hopper_clipq.yaml
+python cs285/scripts/run_hw3_sac.py -cfg experiments/sac/hopper_doubleq.yaml
+
+
+# Humanoid
+python cs285/scripts/run_hw3_sac.py -cfg experiments/sac/humanoid.yaml
+</code></pre>
+</details>
+<p><br/> <br/></p>
+<h2 id="results">Results</h2>
+<figure>
+<img
+src="https://github.com/jimchen2/nonimportant/assets/123833550/d73b750e-0161-4b70-a9b3-bb5527510992"
+alt="image" />
+<figcaption aria-hidden="true">image</figcaption>
+</figure>
+<p><img
+src="https://github.com/jimchen2/nonimportant/assets/123833550/4d080b90-7aba-4016-ba33-961c1a7a8c5a"
+alt="image" /> <img
+src="https://github.com/jimchen2/nonimportant/assets/123833550/1207fdce-f26f-4a38-a710-5190667efd07"
+alt="image" /></p>
+<p>The Q_values tend to be more stable with clipq. Singleq overestimates
+Q_values. Thus singleq tend todrop in performances.</p>
+<figure>
+<img
+src="https://github.com/jimchen2/nonimportant/assets/123833550/ca47de8e-9173-4fef-980a-aba928d42861"
+alt="image" />
+<figcaption aria-hidden="true">image</figcaption>
+</figure>

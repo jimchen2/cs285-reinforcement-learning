@@ -1,0 +1,100 @@
+<h2 id="training-loop">Training Loop</h2>
+<details>
+<ol type="1">
+<li>Compute Action<br />
+<code>action = agent.get_action(observation, epsilon)</code></li>
+</ol>
+<ul>
+<li>If <code>np.random.random()&lt;epsilon</code>, Choose a random
+action<br />
+<code>action = torch.tensor(random.randint(0, self.num_actions - 1))</code></li>
+<li>Else choose from critic network<br />
+<code>action = self.critic(observation).argmax(dim=1)</code></li>
+</ul>
+<ol start="2" type="1">
+<li><p>Step environment</p></li>
+<li><p>Add data to replay buffer<br />
+<code>replay_buffer.insert(...)</code></p></li>
+<li><p>Handle episode termination</p></li>
+<li><p>Sample from replay buffer<br />
+<code>batch = replay_buffer.sample(config["batch_size"])</code><br />
+</p></li>
+<li><p>Train agent<br />
+<code>agent.update(...)</code></p></li>
+</ol>
+<ul>
+<li>If <code>step % self.target_update_period == 0:</code><br />
+Update target network<br />
+<code>self.target_critic.load_state_dict(self.critic.state_dict())</code></li>
+<li>Update critic network<br />
+<code>self.update_critic(obs, action, reward, next_obs, done)</code></li>
+</ul>
+</details>
+<p><br/><br/></p>
+<h2 id="update-critic">Update Critic</h2>
+<details>
+<ol type="1">
+<li>Compute all options of q_values<br />
+<code>next_qa_values = self.target_critic(next_obs)</code></li>
+<li>Choose q_values</li>
+</ol>
+<ul>
+<li>Double_q</li>
+</ul>
+<pre><code># Use critic network to update actions
+next_actions = self.critic(next_obs).argmax(dim=1)
+# Choose the Q values based on actions
+next_q_values = next_qa_values.gather(1, next_actions.unsqueeze(-1)).squeeze(-1)</code></pre>
+<ul>
+<li>Else choose the max Q values<br />
+<code>next_q_values = next_qa_values.max(dim=1).values</code></li>
+</ul>
+<ol start="3" type="1">
+<li><p>Compute target_values<br />
+<code>target_values = reward+self.discount*next_q_values*(~done)</code></p></li>
+<li><p>Get q_values from critic network<br />
+<code>q_values = self.critic(obs).gather(1, action.unsqueeze(-1)).squeeze(-1)</code></p></li>
+<li><p>Compute loss function<br />
+<code>loss = self.critic_loss(q_values, target_values)</code></p></li>
+<li><p>Update critic network</p></li>
+</ol>
+<pre><code>self.critic_optimizer.zero_grad()
+# Gradient clipping
+loss.backward()
+self.critic_optimizer.step()</code></pre>
+</details>
+<p><br/><br/></p>
+<h2 id="experiments-to-run">Experiments to Run</h2>
+<details>
+<pre><code># Cartpole
+python cs285/scripts/run_hw3_dqn.py -cfg experiments/dqn/cartpole.yaml
+
+# Lunar_Lander
+python cs285/scripts/run_hw3_dqn.py -cfg experiments/dqn/lunarlander.yaml --seed 1
+python cs285/scripts/run_hw3_dqn.py -cfg experiments/dqn/lunarlander.yaml --seed 2
+python cs285/scripts/run_hw3_dqn.py -cfg experiments/dqn/lunarlander.yaml --seed 3
+
+
+# double q
+python cs285/scripts/run_hw3_dqn.py -cfg experiments/dqn/lunarlander_doubleq.yaml --seed 1
+python cs285/scripts/run_hw3_dqn.py -cfg experiments/dqn/lunarlander_doubleq.yaml --seed 2
+python cs285/scripts/run_hw3_dqn.py -cfg experiments/dqn/lunarlander_doubleq.yaml --seed 3
+
+
+
+
+# Pacman
+python cs285/scripts/run_hw3_dqn.py -cfg experiments/dqn/mspacman.yaml
+python cs285/scripts/run_hw3_dqn.py -cfg experiments/dqn/mspacman_lr_3e-4.yaml
+python cs285/scripts/run_hw3_dqn.py -cfg experiments/dqn/mspacman_lr_5e-4.yaml
+python cs285/scripts/run_hw3_dqn.py -cfg experiments/dqn/mspacman_lr_5e-5.yaml
+</code></pre>
+</details>
+<p><br/><br/></p>
+<h2 id="results">Results</h2>
+<p><img src="https://github.com/jimchen2/nonimportant/assets/123833550/d3394894-2bd8-4b05-adad-696401bac6ac">
+If learning rate of CartPole is too high then the predicted q values and
+critic error are both very high, leaing to overestimation.
+<img src="https://github.com/jimchen2/nonimportant/assets/123833550/9f68d19f-20e5-4281-98b1-734c310dd7f7">
+<img src="https://github.com/jimchen2/nonimportant/assets/123833550/3c251c9d-0633-4274-a90a-abe2f61a140b">
+<img src="https://github.com/jimchen2/nonimportant/assets/123833550/8bb9ce61-0c73-4d99-b1ce-53bc4c621ebd"></p>

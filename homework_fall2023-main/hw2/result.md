@@ -1,0 +1,108 @@
+## CartPole
+
+<details>
+
+```
+# small batch
+python cs285/scripts/run_hw2.py --env_name CartPole-v0 -n 100 -b 1000 --exp_name cartpole
+python cs285/scripts/run_hw2.py --env_name CartPole-v0 -n 100 -b 1000 -rtg --exp_name cartpole_rtg
+python cs285/scripts/run_hw2.py --env_name CartPole-v0 -n 100 -b 1000 -na --exp_name cartpole_na
+python cs285/scripts/run_hw2.py --env_name CartPole-v0 -n 100 -b 1000 -rtg -na --exp_name cartpole_rtg_na
+
+#large batch
+python cs285/scripts/run_hw2.py --env_name CartPole-v0 -n 100 -b 4000 --exp_name cartpole_lb
+python cs285/scripts/run_hw2.py --env_name CartPole-v0 -n 100 -b 4000 -rtg --exp_name cartpole_lb_rtg
+python cs285/scripts/run_hw2.py --env_name CartPole-v0 -n 100 -b 4000 -na --exp_name cartpole_lb_na
+python cs285/scripts/run_hw2.py --env_name CartPole-v0 -n 100 -b 4000 -rtg -na --exp_name cartpole_lb_rtg_na
+```
+
+</details>
+<br/>
+<br/>
+
+![Alt text](image-7.png)
+![Alt text](image-8.png)
+
+- Which value estimator has better performance without advantage normalization?
+- Without advantage normalization, rtg performs much better than default.
+- Did advantage normalization help?
+- Yes, advantage normalization helps reduce variance, leading to average returns being more stable
+- Did the batch size make an impact?
+- While small batch lead to fewer environment steps to converge, large batch has less variance after initially reaching 200.
+
+## HalfCheetah
+
+<details>
+
+```
+# No baseline
+python cs285/scripts/run_hw2.py --env_name HalfCheetah-v4 -n 100 -b 5000 -rtg --discount 0.95 -lr 0.01 --exp_name cheetah
+#add -na
+python cs285/scripts/run_hw2.py --env_name HalfCheetah-v4 -n 100 -b 5000 -rtg --discount 0.95 -lr 0.01 --exp_name cheetah_na -na
+# Baseline
+python cs285/scripts/run_hw2.py --env_name HalfCheetah-v4 -n 100 -b 5000 -rtg --discount 0.95 -lr 0.01 --use_baseline -blr 0.01 -bgs 5 --exp_name cheetah_baseline
+# Baseline na
+python cs285/scripts/run_hw2.py --env_name HalfCheetah-v4 -n 100 -b 5000 -rtg --discount 0.95 -lr 0.01 --use_baseline -blr 0.01 -bgs 5 --exp_name cheetah_baseline -na
+# Customized
+python cs285/scripts/run_hw2.py --env_name HalfCheetah-v4 -n 100 -b 5000 -rtg --discount 0.95 -lr 0.01 --use_baseline -blr 0.01 -bgs 3 --exp_name cheetah_baseline_low_bgs
+python cs285/scripts/run_hw2.py --env_name HalfCheetah-v4 -n 100 -b 5000 -rtg --discount 0.95 -lr 0.01 --use_baseline -blr 0.005 -bgs 5 --exp_name cheetah_baseline_low_blr
+```
+
+</details>
+<br/>
+<br/>
+
+![Alt text](image-12.png)
+![Alt text](image-13.png)
+
+- Normalizing advantages makes learning faster.
+- With a decreased number of bgs or blr, the half cheetah tends to be similar in performance.
+- The default(without normalizing advantages or baseline) performs poor
+
+## Inverted Pendulum
+
+<details>
+```
+# finetuning 
+    for seed in $(seq 1 5); do python cs285/scripts/run_hw2.py --env_name InvertedPendulum-v4 -n 200 --exp_name pendulum_default_s$seed --use_baseline -na -rtg --discount 0.95 --n_layers 2 --layer_size 16 --gae_lambda 0.98 --batch_size 1000 -lr 0.02 --seed $seed; done
+```
+
+</details>
+<br/>
+<br/>
+
+![Alt text](image-14.png)
+
+## LunarLander
+
+<details>
+
+```
+python cs285/scripts/run_hw2.py --env_name LunarLander-v2 --ep_len 1000 --discount 0.99 -n 300 -l 3 -s 128 -b 2000 -lr 0.001 --use_reward_to_go --use_baseline --gae_lambda 0    --exp_name lunar_lander_lambda0
+python cs285/scripts/run_hw2.py --env_name LunarLander-v2 --ep_len 1000 --discount 0.99 -n 300 -l 3 -s 128 -b 2000 -lr 0.001 --use_reward_to_go --use_baseline --gae_lambda 0.95 --exp_name lunar_lander_lambda0.95
+python cs285/scripts/run_hw2.py --env_name LunarLander-v2 --ep_len 1000 --discount 0.99 -n 300 -l 3 -s 128 -b 2000 -lr 0.001 --use_reward_to_go --use_baseline --gae_lambda 0.98 --exp_name lunar_lander_lambda0.98
+python cs285/scripts/run_hw2.py --env_name LunarLander-v2 --ep_len 1000 --discount 0.99 -n 300 -l 3 -s 128 -b 2000 -lr 0.001 --use_reward_to_go --use_baseline --gae_lambda 0.99 --exp_name lunar_lander_lambda0.99
+python cs285/scripts/run_hw2.py --env_name LunarLander-v2 --ep_len 1000 --discount 0.99 -n 300 -l 3 -s 128 -b 2000 -lr 0.001 --use_reward_to_go --use_baseline --gae_lambda 1.00 --exp_name lunar_lander_lambda1
+```
+
+</details>
+<br/>
+<br/>
+
+![Alt text](image-4.png)
+
+- λ = 0.95 (blue line) performs poorly, with low returns and high variance compared to other values.
+- λ = 0.98 (orange line) and λ = 0.99 (green line) perform well, but λ = 0.99 experiences a significant drop towards the end.
+- λ = 0 (red line) shows high variance and lower overall returns, suggesting that not accounting for future rewards is less effective. The advantage estimate becomes the same as the TD (Temporal Difference) error.
+- λ = 1 (purple line) has an early rise in returns and exhibits high variance, indicating that overemphasizing long-term rewards can lead to unstable learning.
+
+## Humanoid
+
+<details>
+```
+python cs285/scripts/run_hw2.py --env_name Humanoid-v4 --ep_len 1000 --discount 0.99 -n 1000 -l 3 -s 256 -b 50000 -lr 0.001 --baseline_gradient_steps 50 -na --use_reward_to_go --use_baseline --gae_lambda 0.97 --exp_name humanoid --video_log_freq 5
+```
+
+</details>
+<br/>
+<br/>

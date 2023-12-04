@@ -1,0 +1,124 @@
+<h1 id="imitation-learning-with-dagger">Imitation Learning with
+Dagger</h1>
+<h2 id="code-implementation-overview">Code Implementation Overview</h2>
+<details>
+<summary>
+Step the Env
+</summary>
+<pre><code>ac = ptu.to_numpy(policy(ptu.from_numpy(ob.reshape(1, -1))).sample())
+ac = ac[0]  # Retrieve the action value
+next_ob, rew, done, _ = env.step(ac)  </code></pre>
+</details>
+<p><br/><br/></p>
+<details>
+<summary>
+Collecting Trajectories
+</summary>
+<pre><code>paths, envsteps_this_batch = utils.sample_trajectories(env, actor, params[&#39;batch_size&#39;], params[&#39;ep_len&#39;])</code></pre>
+</details>
+<p><br/><br/></p>
+<details>
+<summary>
+Get Expert Policy
+</summary>
+<pre><code># Update actions in each path using expert policy
+for path in paths:
+    path[&quot;action&quot;] = expert_policy.get_action(path[&quot;observation&quot;])</code></pre>
+</details>
+<p><br/><br/></p>
+<details>
+<summary>
+Get Sampled Data
+</summary>
+<pre><code>rand_indices = np.random.permutation(replay_buffer.obs.shape[0])[:params[&#39;batch_size&#39;]]
+ob_batch, ac_batch = replay_buffer.obs[rand_indices], replay_buffer.acs[rand_indices]</code></pre>
+</details>
+<p><br/><br/></p>
+<details>
+<summary>
+Training the Actor
+</summary>
+<pre><code>train_log = actor.update(ob_batch, ac_batch)</code></pre>
+</details>
+<p><br/><br/></p>
+<h2 id="behavioral-cloning">Behavioral Cloning</h2>
+<h3 id="ant">Ant</h3>
+<details>
+<pre><code>python cs285/scripts/run_hw1.py --expert_policy_file cs285/policies/experts/Ant.pkl --env_name Ant-v4 --exp_name bc_ant --n_iter 1 --expert_data cs285/expert_data/expert_data_Ant-v4.pkl --video_log_freq -1</code></pre>
+<pre><code>python cs285/scripts/run_hw1.py --expert_policy_file cs285/policies/experts/Ant.pkl --env_name Ant-v4 --exp_name bc_ant --n_iter 1 --expert_data cs285/expert_data/expert_data_Ant-v4.pkl --video_log_freq -1 --batch_size 1000 --eval_batch_size 30000  --ep_len 1000 --n_layers 2 --size 32 --learning_rate 3e-2</code></pre>
+<pre><code>python cs285/scripts/run_hw1.py --expert_policy_file cs285/policies/experts/Ant.pkl --env_name Ant-v4 --exp_name bc_ant --n_iter 1 --expert_data cs285/expert_data/expert_data_Ant-v4.pkl --video_log_freq -1 --batch_size 100 --eval_batch_size 30000  --ep_len 1000 --n_layers 2 --size 16 --learning_rate 4e-2</code></pre>
+</details>
+<p><br/><br/></p>
+<h3 id="halfcheetah">HalfCheetah</h3>
+<details>
+<pre><code>python cs285/scripts/run_hw1.py --expert_policy_file cs285/policies/experts/HalfCheetah.pkl --env_name HalfCheetah-v4 --exp_name bc_halfcheetah --n_iter 1 --expert_data cs285/expert_data/expert_data_HalfCheetah-v4.pkl --video_log_freq -1  </code></pre>
+<pre><code>python cs285/scripts/run_hw1.py --expert_policy_file cs285/policies/experts/HalfCheetah.pkl --env_name HalfCheetah-v4 --exp_name bc_halfcheetah --n_iter 1 --expert_data cs285/expert_data/expert_data_HalfCheetah-v4.pkl --video_log_freq -1 --batch_size 100 --eval_batch_size 30000  --ep_len 1000 --n_layers 3 --size 64 --learning_rate 2e-2</code></pre>
+</details>
+<p><br/><br/></p>
+<table style="width:100%;">
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 27%" />
+<col style="width: 11%" />
+<col style="width: 37%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Environment</th>
+<th>Configuration</th>
+<th>Mean</th>
+<th>Standard Deviation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Ant</td>
+<td>Naive Configuration</td>
+<td>3,401.8508</td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td>Ant</td>
+<td><code>--size 32 --learning_rate 3e-2</code></td>
+<td>4,585.5176</td>
+<td>108.1566</td>
+</tr>
+<tr class="odd">
+<td>Ant</td>
+<td><code>--batch_size 100 --size 16 --learning_rate 4e-2</code></td>
+<td>4,170.0972</td>
+<td>829.4213</td>
+</tr>
+<tr class="even">
+<td>HalfCheetah</td>
+<td>Naive Configuration</td>
+<td>3,264.8667</td>
+<td>0</td>
+</tr>
+<tr class="odd">
+<td>HalfCheetah</td>
+<td><code>--batch_size 100 --n_layers 3 --size 64 --learning_rate 2e-2</code></td>
+<td>3,765.103</td>
+<td>106.6637</td>
+</tr>
+</tbody>
+</table>
+<h2 id="dagger">Dagger</h2>
+<p>Add<code>--do_dagger</code> to the end of each commands above and
+change iters
+<!-- plotting the number of DAgger iterations vs. the policy’s
+mean return,including behaviorr cloning performance and expert policy performance,show the standard deviation --></p>
+<h3 id="ant-1">Ant</h3>
+<details>
+<pre><code>python cs285/scripts/run_hw1.py --expert_policy_file cs285/policies/experts/Ant.pkl --env_name Ant-v4 --exp_name dagger_ant --n_iter 10 --do_dagger --expert_data cs285/expert_data/expert_data_Ant-v4.pkl --video_log_freq -1</code></pre>
+</details>
+<p><br/><br/></p>
+<p><img src="https://github.com/jimchen2/nonimportant/assets/123833550/b152941e-b730-41cc-a1c9-898813d92388" alt="image" style="width: 100%;"></p>
+<h3 id="halfcheetah-1">HalfCheetah</h3>
+<details>
+<pre><code>python cs285/scripts/run_hw1.py --expert_policy_file cs285/policies/experts/HalfCheetah.pkl --env_name HalfCheetah-v4 --exp_name bc_halfcheetah --n_iter 10 --expert_data cs285/expert_data/expert_data_HalfCheetah-v4.pkl --video_log_freq -1 --do_dagger</code></pre>
+<pre><code>python cs285/scripts/run_hw1.py --expert_policy_file cs285/policies/experts/HalfCheetah.pkl --env_name HalfCheetah-v4 --exp_name bc_halfcheetah --n_iter 5 --expert_data cs285/expert_data/expert_data_HalfCheetah-v4.pkl --video_log_freq -1 --batch_size 100 --eval_batch_size 10000  --ep_len 1000 --n_layers 3 --size 64 --learning_rate 1e-2 --do_dagger</code></pre>
+<pre><code>python cs285/scripts/run_hw1.py --expert_policy_file cs285/policies/experts/HalfCheetah.pkl --env_name HalfCheetah-v4 --exp_name bc_halfcheetah --n_iter 10 --expert_data cs285/expert_data/expert_data_HalfCheetah-v4.pkl --video_log_freq -1 --batch_size 10000 --eval_batch_size 10000  --ep_len 1000 --n_layers 2 --size 64 --learning_rate 4e-3 --do_dagger</code></pre>
+</details>
+<p><br/><br/></p>
+<p><img src="https://github.com/jimchen2/nonimportant/assets/123833550/581de3c1-45da-47a9-9ca1-02027142b02a" alt="image" style="width: 100%;"></p>
