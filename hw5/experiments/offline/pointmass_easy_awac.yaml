@@ -1,0 +1,10 @@
+base_config: "awac"
+env_name: "PointmassEasy-v0"
+exp_name: "pointmass_easy_dqn"
+training_steps: 100000
+dataset_name: "pointmass_easy_rnd"
+
+temperature: 10.0
+
+hidden_size: 64
+num_layers: 2
