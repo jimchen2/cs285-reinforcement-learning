@@ -31,14 +31,16 @@ class AWACAgent(DQNAgent):
         dones: torch.Tensor,
     ):
         with torch.no_grad():
-            # TODO(student): compute the actor distribution, then use it to compute E[Q(s, a)]
+            # Compute the actor's action distribution at the next observations
+            next_action_distribution = self.actor(next_observations)
+            next_action_probs = next_action_distribution.probs  # Assuming it's a Categorical distribution
+
+            # Compute the expected Q-values under the current policy
             next_qa_values = self.target_critic(next_observations)
-            # Use the actor to compute a critic backup
+            next_q_values = torch.sum(next_action_probs * next_qa_values, dim=1)
 
-            # TODO(student): Compute the TD target
-            next_q_values = torch.max(next_qa_values, dim=1)[0]
-            target_values = rewards + self.discount * next_q_values * (~ dones)
-
+            # Compute the TD target using the expected Q-values
+            target_values = rewards + self.discount * next_q_values * (~dones)
         
         # TODO(student): Compute Q(s, a) and loss similar to DQN
         qa_values = self.critic(observations)
