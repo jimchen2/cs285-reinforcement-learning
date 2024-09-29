@@ -67,7 +67,7 @@ class IQLAgent(AWACAgent):
         q_values = qa_values_all_actions.gather(1, action_indices).squeeze(-1)
         with torch.no_grad():
             # Compute target values using the target value critic
-            target_values = rewards + self.discount * self.target_value_critic(next_observations).squeeze(-1) * (~ dones)
+            target_values = (rewards + self.discount * self.target_value_critic(next_observations).squeeze(-1) * (~ dones)).detach()
 
         loss = self.critic_loss(q_values, target_values)
 
@@ -119,7 +119,7 @@ class IQLAgent(AWACAgent):
         vs = self.value_critic(observations).squeeze(-1)
 
         # Compute expectile loss
-        loss = self.iql_expectile_loss(self.expectile, vs, q_values)
+        loss = self.iql_expectile_loss(self.expectile, vs, q_values.detach())
 
 
         self.value_critic_optimizer.zero_grad()

@@ -15,3 +15,5 @@ Please use Python3.8
 ```
 sudo dnf install python3.8
 ```
+
+Then first `sudo dnf install swig`

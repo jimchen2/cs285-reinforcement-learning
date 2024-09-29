@@ -30,7 +30,7 @@ class CQLAgent(DQNAgent):
         action: torch.Tensor,
         reward: torch.Tensor,
         next_obs: torch.Tensor,
-        done: bool,
+        done: torch.Tensor,
     ) -> Tuple[torch.Tensor, dict, dict]:
         loss, metrics, variables = super().compute_critic_loss(
             obs,
@@ -43,6 +43,10 @@ class CQLAgent(DQNAgent):
         # CQL implementation
         qa_values = variables["qa_values"]  # Q-values for the actual actions taken
         q_values = variables["q_values"]  # Q-values for all actions
+
+        # Ensure q_values is 2D
+        if q_values.dim() == 1:
+            q_values = q_values.unsqueeze(0)  # Add batch dimension if missing
 
         # Compute logsumexp over all actions
         logsumexp_q_values = torch.logsumexp(q_values / self.cql_temperature, dim=1)
