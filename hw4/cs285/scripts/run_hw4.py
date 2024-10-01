@@ -40,16 +40,13 @@ def collect_mbpo_rollout(
 ):
     obs, acs, rewards, next_obs, dones = [], [], [], [], []
     for _ in range(rollout_len):
-        # TODO(student): collect a rollout using the learned dynamics models
-        # HINT: get actions from `sac_agent` and `next_ob` predictions from `mb_agent`.
-        # Average the ensemble predictions directly to get the next observation.
-        # Get the reward using `env.get_reward`.
-
         ac = sac_agent.get_action(ob)
-        next_ob_preds = mb_agent.get_prediction(ob, ac)
-        next_ob = np.mean(next_ob_preds, axis=0)
+        next_ob_preds = np.stack([
+            mb_agent.get_dynamics_predictions(i, ob[None], ac[None])
+            for i in range(mb_agent.ensemble_size)
+        ])
+        next_ob = np.mean(next_ob_preds, axis=0)[0]  # Average over ensemble and remove extra dimension
         rew, _ = env.get_reward(ob, ac)
-
 
         obs.append(ob)
         acs.append(ac)
@@ -66,7 +63,6 @@ def collect_mbpo_rollout(
         "next_observation": np.array(next_obs),
         "done": np.array(dones),
     }
-
 
 def run_training_loop(
     config: dict, logger: Logger, args: argparse.Namespace, sac_config: Optional[dict]

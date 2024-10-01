@@ -452,40 +452,32 @@ class SoftActorCritic(nn.Module):
 
     def update(
         self,
-        observations: torch.Tensor,
-        actions: torch.Tensor,
-        rewards: torch.Tensor,
-        next_observations: torch.Tensor,
-        dones: torch.Tensor,
+        observations: np.ndarray,
+        actions: np.ndarray,
+        rewards: np.ndarray,
+        next_observations: np.ndarray,
+        dones: np.ndarray,
         step: int,
     ):
         """
         Update the actor and critic networks.
         """
+        # Convert numpy arrays to PyTorch tensors
+        observations = ptu.from_numpy(observations)
+        actions = ptu.from_numpy(actions)
+        rewards = ptu.from_numpy(rewards)
+        next_observations = ptu.from_numpy(next_observations)
+        dones = ptu.from_numpy(dones)
 
         critic_infos = []
-        # TODO(student): Update the critic for num_critic_upates steps, and add the output stats to critic_infos
         for _ in range(self.num_critic_updates):
             info = self.update_critic(
                 observations, actions, rewards, next_observations, dones
             )
             critic_infos.append(info)
-        # ENDTODO
 
-        # TODO(student): Update the actor
-        """
-        actor_info = ...
-        """
         actor_info = self.update_actor(observations)
-        # ENDTODO
 
-        # TODO(student): Perform either hard or soft target updates.
-        """
-        # Relevant variables:
-        #  - step
-        #  - self.target_update_period (None when using soft updates)
-        #  - self.soft_target_update_rate (None when using hard updates)
-        """
         if (
             self.target_update_period is not None
             and step % self.target_update_period == 0
@@ -493,7 +485,6 @@ class SoftActorCritic(nn.Module):
             self.update_target_critic()
         elif self.soft_target_update_rate is not None:
             self.soft_update_target_critic(self.soft_target_update_rate)
-        # ENDTODO
 
         # Average the critic info over all of the steps
         critic_info = {
